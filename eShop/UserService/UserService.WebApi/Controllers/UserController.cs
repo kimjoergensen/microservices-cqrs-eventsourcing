@@ -25,15 +25,22 @@
     [HttpGet("{id}")]
     public async Task<ActionResult<User>> GetUser(int id) {
       var user = await _context.User.FindAsync(id);
-
       if (user == null) return NotFound();
       return user;
     }
 
     [HttpPut("{id}")]
-    public async Task<ActionResult> PutUser(User user) {
+    public async Task<IActionResult> PutUser(int id, User user) {
+      if (id != user.Id) return BadRequest();
       _context.Entry(user).State = EntityState.Modified;
-      await _context.SaveChangesAsync();
+
+      try {
+        await _context.SaveChangesAsync();
+      } catch (DbUpdateConcurrencyException) {
+        if (!await UserExists(id)) return NotFound();
+        else throw;
+      }
+
       return NoContent();
     }
 
@@ -41,7 +48,22 @@
     public async Task<ActionResult<User>> PostUser(User user) {
       _context.User.Add(user);
       await _context.SaveChangesAsync();
-      return CreatedAtAction(nameof(GetUser), new { id = user.Id }, user);
+
+      return CreatedAtAction("GetUser", new { id = user.Id }, user);
     }
+
+    [HttpDelete]
+    public async Task<IActionResult> DeleteUser(int id) {
+      var user = await _context.User.FindAsync(id);
+      if (user == null) return NotFound();
+
+      _context.User.Remove(user);
+      await _context.SaveChangesAsync();
+
+      return NoContent();
+    }
+
+    private async Task<bool> UserExists(int id) =>
+      await _context.User.AnyAsync(user => user.Id == id);
   }
 }
