@@ -63,7 +63,7 @@
       return NoContent();
     }
 
-    private async Task<bool> UserExists(int id) =>
-      await _context.User.AnyAsync(user => user.Id == id);
+    private Task<bool> UserExists(int id) =>
+      _context.User.AnyAsync(user => user.Id == id);
   }
 }
